@@ -38,12 +38,6 @@ def generate_timeseries_data(location, num_points=24, interval='10_minutes'):
 
     return timeseries_data
 
-# Fungsi untuk mengonversi setiap data point ke JSON format dengan pretty-print
-def convert_to_custom_json(data):
-    json_data = json.dumps(data, indent=4)
-    custom_json = json_data.replace('"type":', 'type:').replace('"data":', 'data:')
-    return custom_json
-
 # Endpoint GET untuk mengirim data secara terpisah satu per satu
 @app.route('/api/timeseries/location/<location>', methods=['GET'])
 def get_timeseries_data_stream(location):
@@ -56,7 +50,7 @@ def get_timeseries_data_stream(location):
                 "data": data_point,
                 "type": "uplink"
             }
-            yield convert_to_custom_json(response_data) + '\n'
+            yield json.dumps(response_data, indent=4) + '\n'
     
     return Response(generate(), mimetype='application/json')
 
@@ -65,23 +59,10 @@ def get_timeseries_data_stream(location):
 def get_last_history(location):
     data = generate_timeseries_data(location=location, num_points=1)
     response_data = {
-        "data": data[-1],
+        "data": data[0],
         "type": "uplink"
     }
-    custom_json = convert_to_custom_json(response_data)
-    return Response(custom_json, mimetype='application/json')
-
-# Endpoint GET untuk lokasi A, B, C (per lokasi, interval 1 jam untuk setiap data point)
-@app.route('/api/timeseries/location/<location>', methods=['GET'])
-def get_timeseries_data(location):
-    data = generate_timeseries_data(location=location, num_points=24, interval='10_minutes')
-    response_data = {
-        "data": data,
-        "type": "uplink"
-    }
-    custom_json = convert_to_custom_json(response_data)
-    return Response(custom_json, mimetype='application/json')
+    return jsonify(response_data)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
-
